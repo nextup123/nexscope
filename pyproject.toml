@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nexscope"
+version = "1.0.0"
+description = "NexScope — EtherCAT SDO oscilloscope and logger for the Nextup 6-DOF cobot"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Nextup Robotics Pvt Ltd" }]
+license = { text = "Proprietary" }
+keywords = ["ethercat", "sdo", "robotics", "cia402", "sv660", "oscilloscope"]
+
+dependencies = [
+    "PyQt6>=6.5",
+    "pyqtgraph>=0.13",
+    "numpy>=1.24",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[project.gui-scripts]
+nexscope = "nexscope.app:main"
+
+[tool.setuptools.packages.find]
+include = ["nexscope*"]
+
+[tool.setuptools.package-data]
+"nexscope.resources" = ["*.png", "*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
