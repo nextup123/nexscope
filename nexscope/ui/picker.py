@@ -98,6 +98,10 @@ class ObjectPicker(QtWidgets.QWidget):
         self.chosen.setSelectionMode(
             QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
         self.chosen.setAlternatingRowColors(True)
+        self.chosen.setMinimumHeight(150)
+        self.chosen.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Expanding)
         right.addWidget(self.chosen, 1)
 
         btn_row = QtWidgets.QHBoxLayout()
@@ -110,13 +114,19 @@ class ObjectPicker(QtWidgets.QWidget):
         right.addLayout(btn_row)
 
         quick_box = QtWidgets.QGroupBox("Quick sets")
-        qv = QtWidgets.QVBoxLayout(quick_box)
-        qv.setSpacing(4)
-        for label in QUICK_SETS:
+        qg = QtWidgets.QGridLayout(quick_box)
+        qg.setSpacing(4)
+        qg.setContentsMargins(8, 4, 8, 6)
+        # 2 cols x 2 rows keeps this compact so the recording set gets the
+        # vertical space instead.
+        for i, label in enumerate(QUICK_SETS):
             b = QtWidgets.QPushButton(label)
             b.clicked.connect(lambda _=False, l=label: self._apply_quick(l))
-            qv.addWidget(b)
-        right.addWidget(quick_box)
+            qg.addWidget(b, i // 2, i % 2)
+        quick_box.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Preferred,
+            QtWidgets.QSizePolicy.Policy.Fixed)
+        right.addWidget(quick_box, 0)
 
         layout.addLayout(left, 3)
         layout.addLayout(right, 2)

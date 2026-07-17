@@ -6,9 +6,10 @@ from __future__ import annotations
 
 import argparse
 import os
+import signal
 import sys
 
-from PyQt6 import QtWidgets
+from PyQt6 import QtCore, QtWidgets
 
 from . import __app_name__, __version__
 from .core.model import load_presets
@@ -17,6 +18,37 @@ from .core.settings import Settings
 from .ui.mainwindow import MainWindow
 from .ui.resources import default_presets_path
 from .ui.theme import THEMES, apply_theme
+
+
+def install_sigint_handler(app: QtWidgets.QApplication, win: QtWidgets.QMainWindow):
+    """
+    Make Ctrl+C in the terminal quit the app.
+
+    Qt's event loop is C++ and never yields to the interpreter, so a plain
+    signal.signal() handler would only fire once some Python happens to run —
+    which, while idle in exec(), is never. The idle QTimer below forces the
+    interpreter to wake periodically so pending signals get delivered.
+
+    We route through win.close() rather than app.quit() so the normal
+    closeEvent runs: the recorder thread is stopped and settings are saved,
+    exactly as if the window's X button was clicked.
+    """
+
+    def handler(_signum, _frame):
+        print("\nInterrupt — shutting down NexScope…")
+        win.close()
+        app.quit()
+
+    signal.signal(signal.SIGINT, handler)
+    try:
+        signal.signal(signal.SIGTERM, handler)
+    except (ValueError, OSError):
+        pass  # not always available off the main thread
+
+    timer = QtCore.QTimer()
+    timer.start(200)
+    timer.timeout.connect(lambda: None)  # yield to Python so signals land
+    return timer
 
 
 def parse_args(argv=None):
@@ -61,6 +93,10 @@ def main(argv=None):
     reader = make_reader(args.simulate)
     win = MainWindow(presets, reader, args.simulate, settings)
     win.show()
+
+    # keep a reference so the timer isn't garbage collected
+    _sigint_timer = install_sigint_handler(app, win)  # noqa: F841
+
     return app.exec()
 
 

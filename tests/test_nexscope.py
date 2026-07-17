@@ -350,6 +350,51 @@ def test_picker_favourites_filter():
     assert p._rows[0].key == fav.key
 
 
+def test_quick_sets_grid_is_two_cols():
+    """Quick sets must stay a compact 2-col grid so the recording set
+    keeps the vertical space."""
+    from PyQt6 import QtWidgets
+    from nexscope.ui.picker import ObjectPicker, QUICK_SETS
+    p = ObjectPicker(PRESETS, [])
+    boxes = [w for w in p.findChildren(QtWidgets.QGroupBox)
+             if w.title() == "Quick sets"]
+    assert boxes, "Quick sets box missing"
+    grid = boxes[0].layout()
+    assert isinstance(grid, QtWidgets.QGridLayout)
+    assert grid.columnCount() == 2, grid.columnCount()
+    assert grid.count() == len(QUICK_SETS)
+
+
+def test_recording_list_expands():
+    from PyQt6 import QtWidgets
+    from nexscope.ui.picker import ObjectPicker
+    p = ObjectPicker(PRESETS, [])
+    pol = p.chosen.sizePolicy().verticalPolicy()
+    assert pol == QtWidgets.QSizePolicy.Policy.Expanding
+
+
+# --------------------------------------------------------------------- #
+#  signals / shutdown
+# --------------------------------------------------------------------- #
+
+def test_sigint_handler_installs():
+    """Ctrl+C must be wired up; Qt's loop otherwise swallows SIGINT."""
+    import signal as _sig
+    from nexscope.app import install_sigint_handler
+
+    win = QtWidgets.QMainWindow()
+    prev = _sig.getsignal(_sig.SIGINT)
+    try:
+        timer = install_sigint_handler(_app, win)
+        h = _sig.getsignal(_sig.SIGINT)
+        assert callable(h) and h is not _sig.default_int_handler
+        # the idle timer is what lets Python see the signal at all
+        assert timer.isActive()
+        assert timer.interval() > 0
+    finally:
+        _sig.signal(_sig.SIGINT, prev)
+
+
 # --------------------------------------------------------------------- #
 #  themes
 # --------------------------------------------------------------------- #
